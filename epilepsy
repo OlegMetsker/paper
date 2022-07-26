@@ -1,0 +1,384 @@
+# -*- coding: utf-8 -*-
+from pandas import read_csv, DataFrame
+import pandas as pd
+import re
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+regex = re.compile(r"\[|\]|<", re.IGNORECASE)
+
+data = read_csv('174-153-только-онко-основной.txt', '\t', encoding='ansi', error_bad_lines=False)
+data24 = read_csv('24-clear-min-max.txt', '\t', encoding='ansi', error_bad_lines=False)
+dataNa = read_csv('tableNa-clear-min-max.txt', '\t', encoding='ansi', error_bad_lines=False)
+dataPLT = read_csv('PLT-clear-min-max.txt', '\t', encoding='ansi', error_bad_lines=False)
+dataMCH = read_csv('MCH-clear-min-max.txt', '\t', encoding='ansi', error_bad_lines=False)
+dataBMI = read_csv('bmi-min-max-по эпизоду.txt', '\t', encoding='ansi', error_bad_lines=False)
+datasmoke = read_csv('smoke.txt', '\t', encoding='ansi', error_bad_lines=False)
+datatran = read_csv('transplantation_data.txt', '\t', encoding='ansi', error_bad_lines=False)
+
+datatran = pd.get_dummies(datatran, columns=['Вид','Тип трансплантанта',
+                                             'Групповая принадлежность донора',
+                                             'Резус-принадлежность донора',
+                                             'Макрооценка',
+                                             'Группа крови',
+                                             'Аутогенная',
+                                             'Аллогенная',
+                                             'Диагноз основной при пересадке км',
+                                             'Метод трансплантации',
+                                             'Трансфузионная реакция',
+                                             'Осложнения после трансплантации',
+                                             'Резус-фактор'])
+
+print(datatran['Пульс через 2 час после трансфузии'].unique())
+
+dataBMI = dataBMI.drop(['Осмотр-BMI_все', 'Осмотр-Вес_все'], axis=1)
+
+
+data.columns = ['I60',
+                'I61',
+                'I62',
+                'I63',
+                'I64',
+                'I65',
+                'I66',
+                'I67.0',
+                'I67.1',
+                'I67.2',
+                'I67.3',
+                'I67.4',
+                'I67.5',
+                'I67.6',
+                'I67.7',
+                'I67.8',
+                'I67.9',
+                'I68',
+                'I69',
+                'Fibrilliation',
+                'G40',
+                'Гипертоническая_болезнь',
+                'patient_id',
+                'episod_id','episod_reg',
+                'treatment_start_date',
+                'treatment_start_time',
+                'treatment_result',
+                'treatment_staff',
+                'episod_type',
+                'episod_start_date',
+                'episod_end_date',
+                'treatment_who',
+                'treatment_where',
+                'treatment_org',
+                'hz',
+                'patient_reg',
+                'hz1',
+                'b_date',
+                'b_time',
+                'male',
+                'hz1',
+                'hz2',
+                'hz3',
+                'hz4',
+                'clin_diag',
+                'main_diag',
+                'discription_diag',
+                'predstavlenie_o_bolnom'
+]
+
+#data = pd.get_dummies(data, columns=['treatment_result'])
+
+
+
+
+males = ['Женский','Мужской']
+data = data.loc[data['male'].isin(males)]
+
+print(data['male'].unique())
+
+
+print(data.shape)
+data = pd.get_dummies(data, columns=['male'])
+
+print(data['episod_start_date'].unique())
+print(data.shape)
+data = data.loc[data['episod_start_date'] != " "]
+print(data.shape)
+data = data.loc[data['episod_start_date'] != ""]
+data = data.loc[data['b_date'] != ".0"]
+data = data.loc[data['b_date'] != " "]
+data = data.loc[data['b_date'] != ""]
+data = data.loc[data['b_date'] != "8-24-206"]
+data = data.loc[data['b_date'] != "7-93-405"]
+data = data.loc[data['b_date'] != "6-40-304"]
+data = data.loc[data['b_date'] != "1-50-609"]
+data = data.loc[data['b_date'] != "0-97-900"]
+data = data.loc[data['b_date'] != "8-63-914"]
+data = data.loc[data['b_date'] != "0-97-900"]
+data = data.loc[data['b_date'] != "6-04-800"]
+data = data.loc[data['b_date'] != "8-63-914"]
+data = data.loc[data['b_date'] != "05/01"]
+data = data.loc[data['b_date'] != "24/07"]
+data = data.loc[data['b_date'] != "01/08"]
+data = data.loc[data['b_date'] != "12/01"]
+data = data.loc[data['b_date'] != "07/036"]
+data = data.loc[data['b_date'] != "14.12._1939"]
+data = data.loc[data['b_date'] != "14.12.1939"]
+data = data.loc[data['b_date'] != '12.07.19']
+
+
+
+
+data['b_date'] = data['b_date'].str[:8]
+data = data.loc[data['b_date'] != '12.07.19']
+data = data.loc[data['b_date'] != '25.09.19']
+data = data.loc[data['b_date'] != '1-06-913']
+data = data.loc[data['b_date'] != '9-53-310']
+print(data['b_date'].unique())
+data['Year'] = pd.to_datetime(data['episod_start_date'], format='%Y%m%d').dt.year
+data['b_Year'] = pd.to_datetime(data['b_date'], format='%Y%m%d').dt.year
+
+
+data['b_Years'] = data['b_date'].str[:4]
+
+data = data.loc[data['Year'] != 2001]
+data = data.loc[data['Year'] != 1920]
+data = data[data['b_Years'].notnull()]
+
+
+
+print(data['Year'].unique())
+print(data['b_Year'].unique())
+print(data['b_Years'].unique())
+
+
+
+
+data['Age'] = data.Year - data.b_Year
+
+data = data.loc[data['Age'] > 0]
+
+print(data['Age'].unique())
+
+data = data.merge(data24, how='left',left_on='episod_id',right_on='episod_id')
+print('после 24')
+print(data.shape)
+
+data = data.merge(dataNa, how='left',left_on='episod_id',right_on='episod_id')
+print('после Na')
+print(data.shape)
+data = data.merge(dataPLT, how='left',left_on='episod_id',right_on='episod_id')
+print('после PLT')
+print(data.shape)
+
+data = data.merge(dataMCH, how='left',left_on='episod_id',right_on='episod_id')
+print('после MCH')
+print(data.shape)
+
+data = data.merge(dataBMI, how='left',left_on='episod_id',right_on='episod_id')
+print('после BMI')
+print(data.shape)
+
+data = data.merge(datatran, how='left',left_on='episod_id',right_on='episod_id')
+print('Трансплантации')
+print(data.shape)
+datatran
+"""data = data.merge(datasmoke, how='left',left_on='patient_id',right_on='patient_id')
+print('после smoke')
+print(data.shape)"""
+
+
+desc = data.describe()
+
+desc.to_csv('описательные-эпилепсия-только Онко-трансплантация.txt','\t',encoding='ansi')
+corr_matrix = data.corr()
+corr_matrix.to_csv('корреляционная_матрица-эпилепсия-только-Онко-трансплантация.txt','\t',encoding='ansi')
+data.to_csv('дата-эпилепсия-только-Онко-трансплантация.txt','\t',encoding='ansi')
+data = data.drop(['Unnamed: 1',
+                  'patient_id',
+                  'episod_id','episod_reg',
+                 'treatment_start_date',
+                 'treatment_start_time',
+                 'treatment_staff',
+                'episod_type',
+                'episod_start_date',
+                'episod_end_date',
+                'treatment_who',
+                'treatment_where',
+                'treatment_org',
+                'hz',
+                'patient_reg',
+                'hz1',
+                'b_date',
+                'b_time',
+                  'hz1',
+                  'hz1',
+                  'hz2',
+                  'hz3',
+                  'hz4',
+                  'clin_diag',
+                  'main_diag',
+                  'discription_diag',
+                  'predstavlenie_o_bolnom',
+                  'treatment_result',
+                  'Year',
+                  'b_Year',
+                  'b_Years',
+                  'Осмотр-рост',
+                  'Осмотр-Вес_min',
+                  'Осмотр-Вес_max'], axis=1)
+
+
+
+import xgboost
+import shap
+# load JS visualization code to notebook
+shap.initjs()
+data = data.fillna(data.mean())
+target = data.G40
+train = data.drop(['G40'], axis=1) #из исходных данных убираем
+
+
+
+model = xgboost.train({"learning_rate": 0.01}, xgboost.DMatrix(train, label=target), 100)
+# explain the model's predictions using SHAP
+# (same syntax works for LightGBM, CatBoost, scikit-learn and spark models)
+
+for i in data.columns:
+    print(i)
+
+shap_test = shap.TreeExplainer(model).shap_values(train)
+shap.dependence_plot('Групповая принадлежность донора_0_I', shap_test, train)
+plt.show()
+
+shap.summary_plot(shap_test, train,
+                      max_display=40)
+
+
+plt.show()
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_recall_curve, classification_report
+from sklearn.metrics import plot_roc_curve
+
+forest = RandomForestClassifier(n_estimators=500,class_weight="balanced")
+
+x, y = train, target
+
+xtrain, xtest, ytrain, y_test=train_test_split(x, y, test_size=0.15)
+
+forest = RandomForestClassifier( n_estimators=500)
+
+
+
+forest.fit(xtrain, ytrain)
+
+
+
+ypred = forest.predict(xtest)
+print("\nROC Curve")
+print(plot_roc_curve(forest, xtest, y_test))
+
+report = classification_report(y_test, ypred, target_names=['Нет эпилепсии', 'Эпилепсия'])
+print(report)
+
+
+
+forest = RandomForestClassifier( n_estimators=500)
+
+forest.fit(train, target)
+feature_importance = forest.feature_importances_
+
+print(feature_importance)
+
+
+indices = np.argsort(feature_importance)[::-1]
+names_indices = train.columns
+
+# Plot the feature importances of the forest
+plt.figure()
+plt.title("Feature importances")
+
+plt.bar(range(len(feature_importance)), feature_importance[indices], color="r")
+plt.xticks(range(len(feature_importance)), names_indices, rotation=90)
+
+plt.tight_layout()
+plt.xlim([-1, 20])
+plt.xticks(rotation=90)
+plt.show()
+
+
+
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score, KFold
+from xgboost import XGBClassifier
+
+x, y = train, target
+
+xtrain, xtest, ytrain, ytest=train_test_split(x, y, test_size=0.15)
+
+
+
+xgbc = XGBClassifier(base_score=0.5, booster=None, colsample_bylevel=1,
+              colsample_bynode=1, colsample_bytree=0.6, gamma=2, gpu_id=-1,
+              importance_type='gain', interaction_constraints=None,
+              learning_rate=0.300000012, max_delta_step=0, max_depth=5,
+              min_child_weight=2, monotone_constraints=None,
+              n_estimators=100, n_jobs=0, num_parallel_tree=1, random_state=0,
+              reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=0.8,
+              tree_method=None, validate_parameters=False, verbosity=None)
+print(xgbc)
+
+xgbc.fit(xtrain, ytrain)
+scores = cross_val_score(xgbc, xtrain, ytrain, cv=5)
+print("Mean cross-validation score: %.2f" % scores.mean())
+
+
+
+
+
+ypred = xgbc.predict(xtest)
+cm = confusion_matrix(ytest,ypred)
+print(cm)
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.pylab import rc, plot
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import precision_recall_curve, classification_report
+from sklearn.model_selection import train_test_split
+
+report = classification_report(ytest, ypred, target_names=['Non-churned', 'Churned'])
+print(report)
+
+sns.set(font_scale=1.5)
+sns.set_color_codes("muted")
+
+plt.figure(figsize=(10, 8))
+
+
+
+
+from sklearn.metrics import plot_confusion_matrix
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import StratifiedKFold
+from xgboost import XGBClassifier
+
+
+plot_confusion_matrix(xgbc, xtest, ytest, normalize='true')
+plt.savefig("conf_matrix.png")
+
+plt.show()
